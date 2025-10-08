@@ -6,6 +6,7 @@
 #include "Environment.h"
 #include "ParkingSpot.h"
 #include "SemiTruck.h"
+#include "Controller.h"
 
 int main() {
     // Create window
@@ -31,6 +32,7 @@ int main() {
     Environment environment(WINDOW_WIDTH, WINDOW_HEIGHT);
     //Car car(WINDOW_WIDTH/2, WINDOW_HEIGHT / 2, 50, 30, sf::Color(49, 130, 206));
     SemiTruck semiTruck(500, 500, 0.0f, 0.0f);
+    Controller controller; // self driving controller
 
     // Create parking spot
     ParkingSpot parkingSpot;
@@ -51,11 +53,18 @@ int main() {
             if (event.type == sf::Event::Closed) {
                 window.close();
             }
+
+            // Autonomous mode
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space) {
+                controller.toggle();
+                std::cout << "Autonomous mode: " << (controller.isEnabled ? "ON" : "OFF") << std::endl;
+            }
         
             // Reset on R key
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R){
                 //car = Car(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 50, 30, sf::Color(49, 130, 206));
                 semiTruck = SemiTruck(500, 500, 0.0f, 0.0f);
+                Controller controller; // self driving controller
                 parkingSpot.generateRandom(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
                 attempts++;
                 justParked = false;
@@ -64,7 +73,11 @@ int main() {
     
         // Update the physics
         float dt = clock.restart().asSeconds();
-        semiTruck.handleInput(dt);
+        if (controller.isEnabled) {
+            controller.update(semiTruck, parkingSpot, dt);
+        } else {
+            semiTruck.handleInput(dt);
+        }
         semiTruck.update(dt);
         semiTruck.updateSensors(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
         environment.handleSemiCollision(semiTruck);
@@ -110,8 +123,9 @@ int main() {
            << "Position Error: " << std::setprecision(1) << parkingSpot.getPositionError(semiTruck) << " px\n"
            << "Angle Error: " << std::setprecision(1) << parkingSpot.getAngleError(semiTruck) << " deg\n"
            << "Parking Status: " << (parkingSpot.isParked ? "PARKED!" : "Not Parked") << "\n"
-           << "Score" << successfulParkings << " / " << attempts << "\n";
-        
+           << "Score" << successfulParkings << " / " << attempts << "\n"
+           << "Autonomous: " << (controller.isEnabled ? "ON" : "OFF") << "\n"
+           << "State: " << controller.getStateName() << "\n";
         text.setString(ss.str());
         text.setPosition(30, 30);
         window.draw(text);
