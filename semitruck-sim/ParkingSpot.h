@@ -97,8 +97,6 @@ class ParkingSpot {
         return isParked;
     }
 
-    
-
     float getPositionError(const SemiTruck& semi) const {
         float radians = targetAngle * M_PI / 180.0f;
 
@@ -126,9 +124,6 @@ class ParkingSpot {
 
         return std::max(cab_angleDiff, trailer_angleDiff);
     }
-
 };
-
-
 
 #endif

@@ -199,6 +199,27 @@ class SemiTruck{
         }
     }
 
+    std::vector<float> getState() const {
+        /*
+        Assume perfect information (no kalman needed)
+        */
+        std::vector<float> state;
+        state.push_back(cab_x);
+        state.push_back(cab_y);
+        state.push_back(cab_angle);
+        state.push_back(cab_speed);
+        state.push_back(trailer_x);
+        state.push_back(trailer_y);
+        state.push_back(trailer_angle);
+
+        // Add sensor readings
+        for (float dist:sensorDistances) {
+            state.push_back(dist);
+        }
+        
+        return state;
+    }
+
     void draw(sf::RenderWindow& window) {
         // Draw trailer first (so it appears behind cab)
         sf::RectangleShape trailerRect(sf::Vector2f(trailer_length, 25.0f));
