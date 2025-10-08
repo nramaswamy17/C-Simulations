@@ -32,7 +32,6 @@ int main() {
     //Car car(WINDOW_WIDTH/2, WINDOW_HEIGHT / 2, 50, 30, sf::Color(49, 130, 206));
     SemiTruck semiTruck(500, 500, 0.0f, 0.0f);
 
-
     // Create parking spot
     ParkingSpot parkingSpot;
     parkingSpot.generateRandom(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
@@ -41,9 +40,7 @@ int main() {
     int attempts = 1;
     bool justParked = false;
     sf::Clock parkingTimer;
-
     sf::Clock clock;
-
     sf::Clock loopTimer; // Measures loop iterations
 
     while (window.isOpen()) {
@@ -69,6 +66,7 @@ int main() {
         float dt = clock.restart().asSeconds();
         semiTruck.handleInput(dt);
         semiTruck.update(dt);
+        semiTruck.updateSensors(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
         environment.handleSemiCollision(semiTruck);
         
         // Check if semi is parked successfully 
@@ -109,8 +107,8 @@ int main() {
            << "Speed: " << std::setprecision(1) << semiTruck.cab_speed << " px/s\n"
            << "Collision Status: " << (semiTruck.isColliding ? "True" : "False") << "\n"
            << "Target Angle: " << std::setprecision(0) << parkingSpot.targetAngle << "deg\n"
-           //<< "Position Error: " << std::setprecision(1) << parkingSpot.getPositionError(semiTruck) << " px\n"
-           //<< "Angle Error: " << std::setprecision(1) << parkingSpot.getAngleError(semiTruck) << " deg\n"
+           << "Position Error: " << std::setprecision(1) << parkingSpot.getPositionError(semiTruck) << " px\n"
+           << "Angle Error: " << std::setprecision(1) << parkingSpot.getAngleError(semiTruck) << " deg\n"
            << "Parking Status: " << (parkingSpot.isParked ? "PARKED!" : "Not Parked") << "\n"
            << "Score" << successfulParkings << " / " << attempts << "\n";
         

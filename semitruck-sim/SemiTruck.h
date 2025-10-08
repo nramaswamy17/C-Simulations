@@ -30,6 +30,12 @@ class SemiTruck{
         float collisionDisplayTime;
         bool isJackknifed;
 
+        // Sensor system
+        int numSensors;
+        std::vector<float> sensorAngles; // Offset of each sensor from cab angle
+        std::vector<float> sensorDistances; // Readings
+        float maxSensorRange;
+
     SemiTruck(float start_x, float start_y, float start_angle, float start_speed){
         // Vehicle starting position / speed
         cab_x = start_x;
@@ -60,6 +66,16 @@ class SemiTruck{
         isColliding = false;
         collisionDisplayTime = 2.0f;
         isJackknifed = false;
+
+        // Sensors
+        numSensors = 8;
+        maxSensorRange = 200.0f;
+        sensorDistances.resize(numSensors, maxSensorRange);
+
+        // Sensor angles relative to cab: front, front-right, right, back-right, etc.
+        for (int i = 0; i < numSensors; i++) {
+            sensorAngles.push_back(i * 45.0f);  // 45 degree increments
+        }
     }
 
     void onCollision(){
@@ -147,7 +163,40 @@ class SemiTruck{
         if (isColliding && collisionTimer.getElapsedTime().asSeconds() > collisionDisplayTime){
             isColliding = false;
         }
+    }
 
+    void updateSensors(float envWidth, float envHeight, float wallThickness) {
+        for (int i = 0; i < numSensors; i++) {
+            float sensorWorldAngle = cab_angle + sensorAngles[i];
+            float radians = sensorWorldAngle * M_PI / 180.0f;
+
+            // ray from cab to max sensor range
+            float minDist = maxSensorRange;
+
+            // Check intersections with each wall
+            // Left wall 
+            if (std::cos(radians) < 0) {
+                float dist = (cab_x - wallThickness) / -std::cos(radians);
+                if (dist > 0 && dist < minDist) minDist = dist;
+            }
+            // Right wall
+            if (std::cos(radians) > 0) {
+                float dist = (envWidth - wallThickness - cab_x) / std::cos(radians);
+                if (dist > 0 && dist < minDist) minDist = dist;
+            }
+            // Top wall
+            if (std::sin(radians) < 0) {
+                float dist = (cab_y - wallThickness) / -std::sin(radians);
+                if (dist > 0 && dist < minDist) minDist = dist;
+            }
+            // Bottom wall
+            if (std::sin(radians) > 0) {
+                float dist = (envHeight - wallThickness - cab_y) / std::sin(radians);
+                if (dist > 0 && dist < minDist) minDist = dist;
+            }
+
+            sensorDistances[i] = minDist;
+        }
     }
 
     void draw(sf::RenderWindow& window) {
@@ -188,7 +237,7 @@ class SemiTruck{
         line[1].color = sf::Color::Yellow;
         window.draw(line, 2, sf::Lines);
         
-        // Optional: Draw hitch point for debugging
+        // Draw hitch point
         float hitch_radians = cab_angle * M_PI / 180.0f;
         float hitch_x = cab_x - std::cos(hitch_radians) * hitch_distance_from_cab_rear;
         float hitch_y = cab_y - std::sin(hitch_radians) * hitch_distance_from_cab_rear;
@@ -198,6 +247,27 @@ class SemiTruck{
         hitchPoint.setPosition(hitch_x, hitch_y);
         hitchPoint.setFillColor(sf::Color::Green);
         window.draw(hitchPoint);
+
+        // Draw sensor rays
+        for (int i = 0; i < numSensors; i++) {
+            float sensorWorldAngle = cab_angle + sensorAngles[i];
+            float radians = sensorWorldAngle * M_PI / 180.0f;
+
+            float endX = cab_x + std::cos(radians) * sensorDistances[i];
+            float endY = cab_y + std::sin(radians) * sensorDistances[i];
+
+            sf::Vertex sensorLine[] = {
+                sf::Vertex(sf::Vector2f(cab_x, cab_y)),
+                sf::Vertex(sf::Vector2f(endX, endY))
+            };
+
+            // Color based on distance (green = far, red = close)
+            float intensity = sensorDistances[i] / maxSensorRange;
+            sf::Color sensorColor(255 * (1 - intensity), 255 * intensity, 0, 100);
+            sensorLine[0].color = sensorColor;
+            sensorLine[1].color = sensorColor;
+            window.draw(sensorLine, 2, sf::Lines);
+        }
     }
 
 };

@@ -35,7 +35,7 @@ class ParkingSpot {
         spotColor = sf::Color(100, 200, 100, 100);      // Semi-transparent green
         successColor = sf::Color(50, 255, 50, 150);     // Brighter green
         isParked = false;
-        positionTolerance = 10.0f;
+        positionTolerance = 15.0f;
         angleTolerance = 10.0f;
         speedTolerance = 20.0f;
     }
@@ -84,35 +84,47 @@ class ParkingSpot {
         window.draw(arrow, 2, sf::Lines);
     }
 
-    bool checkIfParked(const SemiTruck& semiTruck) {
-        //Check position distance from center
-        float dx = semiTruck.cab_x - x;
-        float dy = semiTruck.cab_y - y;
-        float distance = std::sqrt(dx * dx + dy * dy);
+    bool checkIfParked(const SemiTruck& semi) {
+        
+        float posError = getPositionError(semi);
+        float angError = getAngleError(semi);
+        bool speedCorrect = std::abs(semi.cab_speed) < speedTolerance;
 
-        // Check angle
-        float angleDiff = std::abs(semiTruck.cab_angle - targetAngle);
-        while (angleDiff > 180.0f) angleDiff = 360.0f - angleDiff;
+        isParked = (posError < positionTolerance) &&
+                    (angError < angleTolerance) &&
+                    speedCorrect;
 
-        // Check speed (car should be stopped when parked)
-        bool positionCorrect = distance < positionTolerance;
-        bool angleCorrect = angleDiff < angleTolerance;
-        bool speedCorrect = std::abs(semiTruck.cab_speed) < speedTolerance;
-
-        isParked = positionCorrect && angleCorrect && speedCorrect;
         return isParked;
     }
 
-    float getPositionError(const Car& car) const {
-        float dx = car.x - x;
-        float dy = car.y - y;
-        return std::sqrt(dx * dx + dy * dy);
+    
+
+    float getPositionError(const SemiTruck& semi) const {
+        float radians = targetAngle * M_PI / 180.0f;
+
+        float cab_target_x = x + std::cos(radians) * 25.0f;
+        float cab_target_y = y + std::sin(radians) * 25.0f;
+        float cab_dx = semi.cab_x - cab_target_x;
+        float cab_dy = semi.cab_y - cab_target_y;
+        float cab_error = std::sqrt(cab_dx * cab_dx + cab_dy * cab_dy);
+
+        float trailer_target_x = x + std::cos(radians) * -35.0f;
+        float trailer_target_y = y + std::sin(radians) * -35.0f;
+        float trailer_dx = semi.trailer_x - trailer_target_x;
+        float trailer_dy = semi.trailer_y - trailer_target_y;
+        float trailer_error = std::sqrt(trailer_dx * trailer_dx + trailer_dy * trailer_dy);
+
+        return std::max(cab_error, trailer_error);
     }
 
-    float getAngleError(const Car& car) const {
-        float angleDiff = std::abs(car.angle - targetAngle);
-        while (angleDiff > 180.0f) angleDiff = 360.0f - angleDiff;
-        return angleDiff;
+    float getAngleError(const SemiTruck& semi) const {
+        float cab_angleDiff = std::abs(semi.cab_angle - targetAngle);
+        while (cab_angleDiff > 180.0f) cab_angleDiff = 360.0f - cab_angleDiff;
+
+        float trailer_angleDiff = std::abs(semi.trailer_angle - targetAngle);
+        while (trailer_angleDiff > 180.0f) trailer_angleDiff = 360.0f - trailer_angleDiff;
+
+        return std::max(cab_angleDiff, trailer_angleDiff);
     }
 
 };

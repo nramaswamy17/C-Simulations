@@ -162,8 +162,7 @@ class Environment {
             semiTruck.trailer_y = height - wallThickness - trailer_maxExtend;
             semiTruck.cab_speed *= -0.5f;
             collisionOccurred = true;
-            std::cout<<"Collision! " << semiTruck.trailer_y << "| " << temp << std::endl;
-        }
+            }
 
         // Pass collision to semiTruck object
         if (collisionOccurred) {
