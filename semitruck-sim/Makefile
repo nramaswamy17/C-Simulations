@@ -8,7 +8,7 @@ LIBS = -lsfml-graphics -lsfml-window -lsfml-system
 
 all: build/car_sim
 
-build/car_sim: main.cpp Car.h Environment.h SemiTruck.h
+build/car_sim: main.cpp Car.h Environment.h SemiTruck.h ParkingSpot.h
 	mkdir -p build
 	$(CXX) $(CXXFLAGS) main.cpp -o build/car_sim $(LIBS)
 

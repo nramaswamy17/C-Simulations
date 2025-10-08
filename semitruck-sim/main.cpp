@@ -109,8 +109,8 @@ int main() {
            << "Speed: " << std::setprecision(1) << semiTruck.cab_speed << " px/s\n"
            << "Collision Status: " << (semiTruck.isColliding ? "True" : "False") << "\n"
            << "Target Angle: " << std::setprecision(0) << parkingSpot.targetAngle << "deg\n"
-           //<< "Position Error: " << std::setprecision(1) << parkingSpot.getPositionError(semiTruck) << " px\n"
-           //<< "Angle Error: " << std::setprecision(1) << parkingSpot.getAngleError(semiTruck) << " deg\n"
+           << "Position Error: " << std::setprecision(1) << parkingSpot.getPositionError(semiTruck) << " px\n"
+           << "Angle Error: " << std::setprecision(1) << parkingSpot.getAngleError(semiTruck) << " deg\n"
            << "Parking Status: " << (parkingSpot.isParked ? "PARKED!" : "Not Parked") << "\n"
            << "Score" << successfulParkings << " / " << attempts << "\n";
         
