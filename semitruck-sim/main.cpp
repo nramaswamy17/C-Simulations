@@ -40,11 +40,32 @@ int main() {
     float startX = WINDOW_WIDTH / 2;  // = 700
     float startY = WINDOW_HEIGHT / 2 + (WINDOW_HEIGHT / 2 - 80);  // = 450 + 370 = 820
     float startAngle = 180.0f; // Facing left for clockwise motion
-    SemiTruck semiTruck(startX, startY, startAngle, 0.0f);
+    SemiTruck semiTruck(startX, startY, startAngle, 0.0f, true);
     
     // Create lane keeping controller
     Controller controller;
     controller.setTargetLane(1); // Middle lane
+
+    // Autonomous NPC Truck 1
+    float truck2_startX = WINDOW_WIDTH / 2;
+    float truck2_startY = WINDOW_HEIGHT / 2 - (WINDOW_HEIGHT / 2 - 80);
+    float truck2_startAngle = 0.0f; // facing right
+    SemiTruck semiTruck2(truck2_startX, truck2_startY, truck2_startAngle, 80.0f, true);
+
+    Controller controller2;
+    controller2.setTargetLane(0);
+    controller2.enable(); // start in autonomous mode
+
+    // Autonomous NPC Truck 2
+    float truck3_startX = WINDOW_WIDTH / 2;
+    float truck3_startY = WINDOW_HEIGHT / 2 - (WINDOW_HEIGHT / 2 - 80);
+    float truck3_startAngle = 0.0f; // facing right
+    SemiTruck semiTruck3(truck3_startX, truck3_startY, truck3_startAngle, 80.0f, true);
+
+    Controller controller3;
+    controller3.setTargetLane(2);
+    controller3.enable(); // start in autonomous mode
+
     
     // Performance metrics
     float totalDistanceTraveled = 0.0f;
@@ -93,7 +114,7 @@ int main() {
                 event.key.code == sf::Keyboard::R) {
                 float resetX = WINDOW_WIDTH / 2;
                 float resetY = WINDOW_HEIGHT / 2 + (WINDOW_HEIGHT / 2 - 80);
-                semiTruck = SemiTruck(resetX, resetY, 180.0f, 0.0f);
+                semiTruck = SemiTruck(resetX, resetY, 180.0f, 0.0f, false);
                 controller.setTargetLane(1);
                 totalDistanceTraveled = 0.0f;
                 timeInLane = 0.0f;
@@ -114,10 +135,26 @@ int main() {
             semiTruck.handleInput(dt);
         }
         
+        // Player semi truck
         semiTruck.update(dt);
         semiTruck.updateSensors(WINDOW_WIDTH, WINDOW_HEIGHT, 
                                environment.wallThickness);
         environment.handleSemiCollision(semiTruck);
+
+        // NPC Semi truck 1
+        controller2.update(semiTruck2, road, dt);
+        semiTruck2.update(dt);
+        semiTruck2.updateSensors(WINDOW_WIDTH, WINDOW_HEIGHT, 
+                               environment.wallThickness);
+        environment.handleSemiCollision(semiTruck2);
+
+        // NPC Semi truck 2
+        controller3.update(semiTruck3, road, dt);
+        semiTruck3.update(dt);
+        semiTruck3.updateSensors(WINDOW_WIDTH, WINDOW_HEIGHT, 
+                               environment.wallThickness);
+        environment.handleSemiCollision(semiTruck3);
+
         
         // Update metrics
         totalDistanceTraveled += std::abs(semiTruck.cab_speed) * dt;
@@ -146,6 +183,8 @@ int main() {
         
         environment.draw(window);
         semiTruck.draw(window);
+        semiTruck2.draw(window);
+        semiTruck3.draw(window);
 
         // Draw controller guidance visualization
         /*
@@ -154,7 +193,7 @@ int main() {
             semiTruck.drawControllerGuidance(window, desiredHeading, controller.isEnabled);
         }
         */
-       
+
         // Draw UI
         sf::Text text;
         text.setFont(font);

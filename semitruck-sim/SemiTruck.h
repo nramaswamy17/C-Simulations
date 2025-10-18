@@ -36,7 +36,10 @@ class SemiTruck{
         std::vector<float> sensorDistances; // Readings
         float maxSensorRange;
 
-    SemiTruck(float start_x, float start_y, float start_angle, float start_speed){
+        // Color setting
+        bool isNPC;
+
+    SemiTruck(float start_x, float start_y, float start_angle, float start_speed, bool isNPC){
         // Vehicle starting position / speed
         cab_x = start_x;
         cab_y = start_y;
@@ -238,7 +241,12 @@ class SemiTruck{
         cabRect.setOrigin(cab_length / 2, 15.0f);
         cabRect.setPosition(cab_x, cab_y);
         cabRect.setRotation(cab_angle);
-        cabRect.setFillColor(sf::Color(220, 50, 50)); // Red
+        if (isNPC) {
+            cabRect.setFillColor(sf::Color(200, 200, 200)); // Red
+        } else {
+            cabRect.setFillColor(sf::Color(220, 50, 50)); // Red
+        }
+        
         cabRect.setOutlineThickness(2);
         if (isColliding) cabRect.setOutlineColor(sf::Color::Red);
         else cabRect.setOutlineColor(sf::Color::Black);
