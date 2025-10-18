@@ -113,72 +113,113 @@ class Environment {
     void handleSemiCollision(SemiTruck & semiTruck) {
         bool collisionOccurred = false;
 
-        // Half dimensions for simplified collision model
-        float cab_maxExtent = std::max(semiTruck.cab_length, 30.0f) / 2.0f + 5.0f;
-        float trailer_maxExtend = std::max(semiTruck.trailer_length, 25.0f) / 2.0f + 5.0f;
+        // Calculate true corners of rotated cab and trailer
+        float cab_radians = semiTruck.cab_angle * M_PI / 180.0f;
+        float trailer_radians = semiTruck.trailer_angle *  M_PI / 180.0f;
 
-        // CAB Collision calculation
-        // Left wall
-        if (semiTruck.cab_x - cab_maxExtent < wallThickness) {
-            semiTruck.cab_x = wallThickness + cab_maxExtent;
-            semiTruck.cab_speed *= -0.5f;
-            collisionOccurred = true;
-        }
+        // Cab dimensions
+        float cab_half_length = semiTruck.cab_length / 2.0f;
+        float cab_half_width = 15.0f;
 
-        // Right wall
-        if (semiTruck.cab_x + cab_maxExtent > width - wallThickness) {
-            semiTruck.cab_x = width - wallThickness - cab_maxExtent;
-            semiTruck.cab_speed *= -0.5f;
-            collisionOccurred = true;
-        }
+        // Trailer dimensions
+        float trailer_half_length = semiTruck.trailer_length / 2.0f;
+        float trailer_half_width = 12.5f;
 
-        // Top wall
-        if (semiTruck.cab_y - cab_maxExtent < wallThickness) {
-            semiTruck.cab_y = wallThickness + cab_maxExtent;
-            semiTruck.cab_speed *= -0.5f;
-            collisionOccurred = true;
-        }
+        // Calculate cab corners (4 corners of a rectangle)
+        float cab_corners_x[4], cab_corners_y[4];
+        float cos_cab = std::cos(cab_radians);
+        float sin_cab = std::sin(cab_radians);
+
+        // APPLY ROTATION MATRIX
+        // Front right corner
+        cab_corners_x[0] = semiTruck.cab_x + cos_cab * cab_half_length - sin_cab * cab_half_width;
+        cab_corners_y[0] = semiTruck.cab_y + sin_cab * cab_half_length + cos_cab * cab_half_width;
         
-        // Bottom wall
-        if (semiTruck.cab_y + cab_maxExtent > height - wallThickness) {
-            semiTruck.cab_y = height - wallThickness - cab_maxExtent;
-            semiTruck.cab_speed *= -0.5f;
-            collisionOccurred = true;
+        // Front left corner
+        cab_corners_x[1] = semiTruck.cab_x + cos_cab * cab_half_length + sin_cab * cab_half_width;
+        cab_corners_y[1] = semiTruck.cab_y + sin_cab * cab_half_length - cos_cab * cab_half_width;
+        
+        // Back left corner
+        cab_corners_x[2] = semiTruck.cab_x - cos_cab * cab_half_length + sin_cab * cab_half_width;
+        cab_corners_y[2] = semiTruck.cab_y - sin_cab * cab_half_length - cos_cab * cab_half_width;
+        
+        // Back right corner
+        cab_corners_x[3] = semiTruck.cab_x - cos_cab * cab_half_length - sin_cab * cab_half_width;
+        cab_corners_y[3] = semiTruck.cab_y - sin_cab * cab_half_length + cos_cab * cab_half_width;
+    
+        // Calculate trailer corners
+        float trailer_corners_x[4], trailer_corners_y[4];
+        float cos_trailer = std::cos(trailer_radians);
+        float sin_trailer = std::sin(trailer_radians);
+
+        // Apply rotation matrix
+        trailer_corners_x[0] = semiTruck.trailer_x + cos_trailer * trailer_half_length - sin_trailer * trailer_half_width;
+        trailer_corners_y[0] = semiTruck.trailer_y + sin_trailer * trailer_half_length + cos_trailer * trailer_half_width;
+        trailer_corners_x[1] = semiTruck.trailer_x + cos_trailer * trailer_half_length + sin_trailer * trailer_half_width;
+        trailer_corners_y[1] = semiTruck.trailer_y + sin_trailer * trailer_half_length - cos_trailer * trailer_half_width;
+        trailer_corners_x[2] = semiTruck.trailer_x - cos_trailer * trailer_half_length + sin_trailer * trailer_half_width;
+        trailer_corners_y[2] = semiTruck.trailer_y - sin_trailer * trailer_half_length - cos_trailer * trailer_half_width;
+        trailer_corners_x[3] = semiTruck.trailer_x - cos_trailer * trailer_half_length - sin_trailer * trailer_half_width;
+        trailer_corners_y[3] = semiTruck.trailer_y - sin_trailer * trailer_half_length + cos_trailer * trailer_half_width;
+        
+
+        // Check cab corners against walls
+        for (int i = 0; i < 4; i++) {
+            // Left wall
+            if (cab_corners_x[i] < wallThickness) {
+                semiTruck.cab_x += (wallThickness - cab_corners_x[i]);
+                semiTruck.cab_speed *= -.5f;
+                collisionOccurred = true;
+            } 
+            // Right wall
+            if (cab_corners_x[i] > width - wallThickness) {
+                semiTruck.cab_x -= (cab_corners_x[i] - (width - wallThickness));
+                semiTruck.cab_speed *= -0.5f;
+                collisionOccurred = true;
+            }
+            // Top wall
+            if (cab_corners_y[i] < wallThickness) {
+                semiTruck.cab_y += (wallThickness - cab_corners_y[i]);
+                semiTruck.cab_speed *= -0.5f;
+                collisionOccurred = true;
+            }
+            // Bottom wall
+            if (cab_corners_y[i] > height - wallThickness) {
+                semiTruck.cab_y -= (cab_corners_y[i] - (height - wallThickness));
+                semiTruck.cab_speed *= -0.5f;
+                collisionOccurred = true;
+            }
         }
 
-        // TRAILER Collision calculation
-        // Left wall
-        if (semiTruck.trailer_x - trailer_maxExtend < wallThickness) {
-            semiTruck.trailer_x = wallThickness + trailer_maxExtend;
-            semiTruck.cab_speed *= -0.5f;
-            collisionOccurred = true;
-        }
-
-        // Right wall
-        if (semiTruck.trailer_x + trailer_maxExtend > width - wallThickness) {
-            semiTruck.trailer_x = width - wallThickness - trailer_maxExtend;
-            semiTruck.cab_speed *= -0.5f;
-            collisionOccurred = true;
-        }
-
-        // Top wall
-        if (semiTruck.trailer_y - trailer_maxExtend < wallThickness) {
-            semiTruck.trailer_y = wallThickness + trailer_maxExtend;
-            semiTruck.cab_speed *= -0.5f;
-            collisionOccurred = true;
-        }
-
-        // Bottom wall
-        if (semiTruck.trailer_y + trailer_maxExtend > height - wallThickness) {
-            semiTruck.trailer_y = height - wallThickness - trailer_maxExtend;
-            semiTruck.cab_speed *= -0.5f;
-            collisionOccurred = true;
+        // Check all trailer corners against walls
+        for (int i = 0; i < 4; i++) {
+            // Left wall
+            if (trailer_corners_x[i] < wallThickness) {
+                semiTruck.cab_speed *= -0.5f;
+                collisionOccurred = true;
+            }
+            // Right wall
+            if (trailer_corners_x[i] > width - wallThickness) {
+                semiTruck.cab_speed *= -0.5f;
+                collisionOccurred = true;
+            }
+            // Top wall
+            if (trailer_corners_y[i] < wallThickness) {
+                semiTruck.cab_speed *= -0.5f;
+                collisionOccurred = true;
+            }
+            // Bottom wall
+            if (trailer_corners_y[i] > height - wallThickness) {
+                semiTruck.cab_speed *= -0.5f;
+                collisionOccurred = true;
+            }
         }
 
         // Pass collision to semiTruck object
         if (collisionOccurred) {
             semiTruck.onCollision();
         }
+
     }
 
 };

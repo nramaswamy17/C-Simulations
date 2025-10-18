@@ -183,7 +183,7 @@ int main() {
            << std::setprecision(0) << (timeInLane / (timeInLane + timeOutOfLane + 0.001f) * 100.0f) 
            << "%)\n"
            << "Lane Departures: " << laneDepartures << "\n"
-           << "FPS: " << std::setprecision(0) << 1.0f / loopTimer.getElapsedTime().asSeconds() << "\n\n"
+           << "Latency: " << std::setprecision(3) << loopTimer.getElapsedTime().asSeconds() * 1000.0f << " ms\n\n"
            << "--- Controls ---\n"
            << "WASD: Manual control\n"
            << "SPACE: Toggle autonomous\n"
