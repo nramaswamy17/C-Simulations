@@ -40,7 +40,7 @@ public:
         isEnabled = false;
         targetLaneIndex = 1;  // Middle lane by default
         
-        targetSpeed = 80.0f;   // Slower for curves
+        targetSpeed = 120.0f;   // Slower for curves
         Kp_lateral = 0.5f;     // Higher gain for curves
         Kp_heading = 2.0f;     // Higher gain for curves
         Kd_lateral = 0.2f;     // More damping
@@ -100,6 +100,22 @@ public:
         }
     }
 
+    // Angle of target lane relative to truck position
+    float getDesiredHeading(const SemiTruck& truck, const Road& road) const {
+        if (!isEnabled) {
+            return truck.cab_angle;
+        }
+
+        const Lane& targetLane = road.lanes[targetLaneIndex];
+
+        // Find closest point on target lane
+        int closestIdx = targetLane.findClosestPointIndex(truck);
+        const RoadPoint& closestPoint  = targetLane.centerline[closestIdx];
+
+        // The desired heading is the lane's tangent direction to this point
+        return closestPoint.angle;
+    }
+    
 private:
     void updateState(float lateralError) {
         float absError = std::abs(lateralError);

@@ -146,7 +146,15 @@ int main() {
         
         environment.draw(window);
         semiTruck.draw(window);
-        
+
+        // Draw controller guidance visualization
+        /*
+        if (controller.isEnabled) {
+            float desiredHeading = controller.getDesiredHeading(semiTruck, road);
+            semiTruck.drawControllerGuidance(window, desiredHeading, controller.isEnabled);
+        }
+        */
+       
         // Draw UI
         sf::Text text;
         text.setFont(font);
@@ -166,14 +174,14 @@ int main() {
            << "--- Truck Status ---\n"
            << "Position: (" << std::fixed << std::setprecision(0) 
            << semiTruck.cab_x << ", " << semiTruck.cab_y << ")\n"
-           << "Heading: " << std::setprecision(0) << semiTruck.cab_angle << "°\n"
+           << "Heading: " << std::setprecision(0) << semiTruck.cab_angle << " deg\n"
            << "Speed: " << std::setprecision(1) << semiTruck.cab_speed << " px/s\n"
            << "Collision: " << (semiTruck.isColliding ? "YES" : "NO") << "\n\n"
            << "--- Lane Info ---\n"
            << "Target Lane: " << (controller.targetLaneIndex + 1) << " of 3\n"
            << "In Lane: " << (isInLane ? "YES" : "NO") << "\n"
            << "Lateral Error: " << std::setprecision(1) << lateralError << " px\n"
-           << "Heading Error: " << std::setprecision(1) << headingError << "°\n"
+           << "Heading Error: " << std::setprecision(1) << headingError << " deg\n"
            << "Dist to Left: " << std::setprecision(0) << distToLeft << " px\n"
            << "Dist to Right: " << std::setprecision(0) << distToRight << " px\n\n"
            << "--- Performance ---\n"
@@ -184,11 +192,7 @@ int main() {
            << "%)\n"
            << "Lane Departures: " << laneDepartures << "\n"
            << "Latency: " << std::setprecision(3) << loopTimer.getElapsedTime().asSeconds() * 1000.0f << " ms\n\n"
-           << "--- Controls ---\n"
-           << "WASD: Manual control\n"
-           << "SPACE: Toggle autonomous\n"
-           << "1/2/3: Select lane\n"
-           << "R: Reset";
+            ;
         
         text.setString(ss.str());
         text.setPosition(WINDOW_WIDTH - 290, 10);  // Move to top-right corner

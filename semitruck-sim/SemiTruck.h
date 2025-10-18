@@ -291,6 +291,31 @@ class SemiTruck{
         }
     }
 
+    void drawControllerGuidance(sf::RenderWindow& window, float desiredAngle, bool isControllerEnabled) {
+        if (!isControllerEnabled) return;
+
+
+        // Draw line in desired heading
+        float radians = desiredAngle * M_PI / 180.0f;
+        float lineLength = 60.0f; // Length of guidance line
+
+        // Draw cyan line
+        for (int offset = -1; offset <= 1; offset++) {
+            float perpAngle = radians + M_PI / 2.0f;
+            float offsetX = offset * std::cos(perpAngle);
+            float offsetY = offset * std::sin(perpAngle);
+
+            sf::Vertex thickLine[] {
+                sf::Vertex(sf::Vector2f(cab_x + offsetX, cab_y + offsetY), sf::Color::Cyan),
+                sf::Vertex(sf::Vector2f(
+                    cab_x + std::cos(radians) * lineLength + offsetX,
+                    cab_y + std::sin(radians) * lineLength + offsetY
+                ), sf::Color::Cyan)
+            };
+            window.draw(thickLine, 2, sf::Lines);
+        }
+    }
+
 };
 
 #endif
