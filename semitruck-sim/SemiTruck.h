@@ -60,7 +60,7 @@ class SemiTruck{
         // Position the trailer behind the cab initially
         trailer_x = cab_x - (cab_length/2 + trailer_length/2);
         trailer_y = cab_y;
-        trailer_angle = 0.0f;
+        trailer_angle = start_angle;
 
         // Collision
         isColliding = false;

@@ -4,16 +4,17 @@
 #include <iomanip>
 #include "Car.h"
 #include "Environment.h"
-#include "ParkingSpot.h"
+#include "Lane.h"
 #include "SemiTruck.h"
 #include "Controller.h"
 
 int main() {
-    // Create window
-    const float WINDOW_WIDTH = 1000.0f;
-    const float WINDOW_HEIGHT = 700.0f;
+    // Create window - larger to fit the full oval track
+    const float WINDOW_WIDTH = 1400.0f;
+    const float WINDOW_HEIGHT = 900.0f;
     
-    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Autonomous Car Simulator");
+    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), 
+                           "Semi Truck Lane Keeping System");
     window.setFramerateLimit(60);
     
     // Load font for text
@@ -28,108 +29,177 @@ int main() {
         }
     }
 
-    // Create environment and car
+    // Create environment and road
     Environment environment(WINDOW_WIDTH, WINDOW_HEIGHT);
-    //Car car(WINDOW_WIDTH/2, WINDOW_HEIGHT / 2, 50, 30, sf::Color(49, 130, 206));
-    SemiTruck semiTruck(500, 500, 0.0f, 0.0f);
-    Controller controller; // self driving controller
-
-    // Create parking spot
-    ParkingSpot parkingSpot;
-    parkingSpot.generateRandom(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
-
-    int successfulParkings = 0;
-    int attempts = 1;
-    bool justParked = false;
-    sf::Clock parkingTimer;
+    Road road(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
+    environment.setRoad(&road);
+    
+    // Create semi truck - position it precisely on middle lane at bottom of oval
+    // Bottom of oval: theta = π/2
+    // Position: (centerX, centerY + radiusY) where radiusY = (HEIGHT/2 - 80)
+    float startX = WINDOW_WIDTH / 2;  // = 700
+    float startY = WINDOW_HEIGHT / 2 + (WINDOW_HEIGHT / 2 - 80);  // = 450 + 370 = 820
+    float startAngle = 180.0f; // Facing left for clockwise motion
+    SemiTruck semiTruck(startX, startY, startAngle, 0.0f);
+    
+    // Create lane keeping controller
+    Controller controller;
+    controller.setTargetLane(1); // Middle lane
+    
+    // Performance metrics
+    float totalDistanceTraveled = 0.0f;
+    float timeInLane = 0.0f;
+    float timeOutOfLane = 0.0f;
+    int laneDepartures = 0;
+    bool wasInLane = true;
+    
     sf::Clock clock;
-    sf::Clock loopTimer; // Measures loop iterations
+    sf::Clock loopTimer;
+    sf::Clock totalTimer;
 
     while (window.isOpen()) {
-        loopTimer.restart(); // Start iteration timing
+        loopTimer.restart();
 
-        sf:: Event event;
+        sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
             }
 
-            // Autonomous mode
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space) {
+            // Toggle autonomous mode with spacebar
+            if (event.type == sf::Event::KeyPressed && 
+                event.key.code == sf::Keyboard::Space) {
                 controller.toggle();
-                std::cout << "Autonomous mode: " << (controller.isEnabled ? "ON" : "OFF") << std::endl;
+                std::cout << "Lane Keeping: " << (controller.isEnabled ? "ON" : "OFF") 
+                         << std::endl;
+            }
+            
+            // Lane selection with number keys (1, 2, 3)
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::Num1) {
+                    controller.setTargetLane(0);
+                    std::cout << "Target: Left Lane" << std::endl;
+                } else if (event.key.code == sf::Keyboard::Num2) {
+                    controller.setTargetLane(1);
+                    std::cout << "Target: Middle Lane" << std::endl;
+                } else if (event.key.code == sf::Keyboard::Num3) {
+                    controller.setTargetLane(2);
+                    std::cout << "Target: Right Lane" << std::endl;
+                }
             }
         
             // Reset on R key
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R){
-                //car = Car(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 50, 30, sf::Color(49, 130, 206));
-                semiTruck = SemiTruck(500, 500, 0.0f, 0.0f);
-                Controller controller; // self driving controller
-                parkingSpot.generateRandom(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
-                attempts++;
-                justParked = false;
+            if (event.type == sf::Event::KeyPressed && 
+                event.key.code == sf::Keyboard::R) {
+                float resetX = WINDOW_WIDTH / 2;
+                float resetY = WINDOW_HEIGHT / 2 + (WINDOW_HEIGHT / 2 - 80);
+                semiTruck = SemiTruck(resetX, resetY, 180.0f, 0.0f);
+                controller.setTargetLane(1);
+                totalDistanceTraveled = 0.0f;
+                timeInLane = 0.0f;
+                timeOutOfLane = 0.0f;
+                laneDepartures = 0;
+                wasInLane = true;
+                totalTimer.restart();
+                std::cout << "System reset" << std::endl;
             }
         }
     
-        // Update the physics
+        // Update physics
         float dt = clock.restart().asSeconds();
+        
         if (controller.isEnabled) {
-            controller.update(semiTruck, parkingSpot, dt);
+            controller.update(semiTruck, road, dt);
         } else {
             semiTruck.handleInput(dt);
         }
+        
         semiTruck.update(dt);
-        semiTruck.updateSensors(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
+        semiTruck.updateSensors(WINDOW_WIDTH, WINDOW_HEIGHT, 
+                               environment.wallThickness);
         environment.handleSemiCollision(semiTruck);
         
-        // Check if semi is parked successfully 
-        if (parkingSpot.checkIfParked(semiTruck) && !justParked) {
-            successfulParkings++;
-            justParked = true;
-            parkingTimer.restart();
+        // Update metrics
+        totalDistanceTraveled += std::abs(semiTruck.cab_speed) * dt;
+        
+        // Check lane status
+        const Lane& currentLane = road.lanes[controller.targetLaneIndex];
+        bool isInLane = currentLane.isInLane(semiTruck);
+        
+        if (isInLane) {
+            timeInLane += dt;
+            if (!wasInLane) {
+                // Just re-entered lane
+                wasInLane = true;
+            }
+        } else {
+            timeOutOfLane += dt;
+            if (wasInLane) {
+                // Just departed from lane
+                laneDepartures++;
+                wasInLane = false;
+            }
         }
         
-        // Auto-generate new spot after 3 seconds of successful parking
-        if (justParked && parkingTimer.getElapsedTime().asSeconds() > 3.0f) {
-            //car = Car(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 50, 30, sf::Color(49, 130, 206));
-            semiTruck = SemiTruck(500, 500, 0.0f, 0.0f);
-            parkingSpot.generateRandom(WINDOW_WIDTH, WINDOW_HEIGHT, environment.wallThickness);
-            attempts++;
-            justParked = false;
-        }
-
-        // drawing
+        // Drawing
         window.clear();
-
+        
         environment.draw(window);
-        parkingSpot.draw(window);
         semiTruck.draw(window);
-
-        // Draw car info
+        
+        // Draw UI
         sf::Text text;
         text.setFont(font);
-        text.setCharacterSize(18);
-        text.setFillColor(sf::Color::Black);
-
-        std::stringstream ss;
-        ss << "Car Status\n"
-           << "Latency: " << std::fixed << std::setprecision(2) << loopTimer.getElapsedTime().asMicroseconds() / 1000.0f << " ms\n"
-           << "Position: (" << std::fixed << std::setprecision(1) 
-           << semiTruck.cab_x << ", " << semiTruck.cab_y << ")\n"
-           << "Angle: " << std::setprecision(0) << semiTruck.cab_angle << " deg\n"
-           << "Speed: " << std::setprecision(1) << semiTruck.cab_speed << " px/s\n"
-           << "Collision Status: " << (semiTruck.isColliding ? "True" : "False") << "\n"
-           << "Target Angle: " << std::setprecision(0) << parkingSpot.targetAngle << "deg\n"
-           << "Position Error: " << std::setprecision(1) << parkingSpot.getPositionError(semiTruck) << " px\n"
-           << "Angle Error: " << std::setprecision(1) << parkingSpot.getAngleError(semiTruck) << " deg\n"
-           << "Parking Status: " << (parkingSpot.isParked ? "PARKED!" : "Not Parked") << "\n"
-           << "Score" << successfulParkings << " / " << attempts << "\n"
-           << "Autonomous: " << (controller.isEnabled ? "ON" : "OFF") << "\n"
-           << "State: " << controller.getStateName() << "\n";
-        text.setString(ss.str());
-        text.setPosition(30, 30);
-        window.draw(text);
+        text.setCharacterSize(16);
+        text.setFillColor(sf::Color::White);
         
+        // Get current lane info
+        float lateralError = currentLane.getLateralError(semiTruck);
+        float headingError = currentLane.getHeadingError(semiTruck);
+        float distToLeft = currentLane.getDistanceToLeftEdge(semiTruck);
+        float distToRight = currentLane.getDistanceToRightEdge(semiTruck);
+        
+        std::stringstream ss;
+        ss << "=== LANE KEEPING SYSTEM ===\n"
+           << "Mode: " << (controller.isEnabled ? "AUTONOMOUS" : "MANUAL") << "\n"
+           << "State: " << controller.getStateName() << "\n\n"
+           << "--- Truck Status ---\n"
+           << "Position: (" << std::fixed << std::setprecision(0) 
+           << semiTruck.cab_x << ", " << semiTruck.cab_y << ")\n"
+           << "Heading: " << std::setprecision(0) << semiTruck.cab_angle << "°\n"
+           << "Speed: " << std::setprecision(1) << semiTruck.cab_speed << " px/s\n"
+           << "Collision: " << (semiTruck.isColliding ? "YES" : "NO") << "\n\n"
+           << "--- Lane Info ---\n"
+           << "Target Lane: " << (controller.targetLaneIndex + 1) << " of 3\n"
+           << "In Lane: " << (isInLane ? "YES" : "NO") << "\n"
+           << "Lateral Error: " << std::setprecision(1) << lateralError << " px\n"
+           << "Heading Error: " << std::setprecision(1) << headingError << "°\n"
+           << "Dist to Left: " << std::setprecision(0) << distToLeft << " px\n"
+           << "Dist to Right: " << std::setprecision(0) << distToRight << " px\n\n"
+           << "--- Performance ---\n"
+           << "Distance: " << std::setprecision(0) << totalDistanceTraveled << " px\n"
+           << "Time in Lane: " << std::setprecision(1) 
+           << timeInLane << "s (" 
+           << std::setprecision(0) << (timeInLane / (timeInLane + timeOutOfLane + 0.001f) * 100.0f) 
+           << "%)\n"
+           << "Lane Departures: " << laneDepartures << "\n"
+           << "FPS: " << std::setprecision(0) << 1.0f / loopTimer.getElapsedTime().asSeconds() << "\n\n"
+           << "--- Controls ---\n"
+           << "WASD: Manual control\n"
+           << "SPACE: Toggle autonomous\n"
+           << "1/2/3: Select lane\n"
+           << "R: Reset";
+        
+        text.setString(ss.str());
+        text.setPosition(WINDOW_WIDTH - 290, 10);  // Move to top-right corner
+        
+        // Add semi-transparent background for readability
+        sf::RectangleShape textBg(sf::Vector2f(280, 500));
+        textBg.setPosition(WINDOW_WIDTH - 295, 5);
+        textBg.setFillColor(sf::Color(0, 0, 0, 180));
+        window.draw(textBg);
+        
+        window.draw(text);
         window.display();
     }
 

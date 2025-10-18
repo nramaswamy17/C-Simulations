@@ -1,19 +1,17 @@
-# Target: what to build
-# Dependencies: what files it needs
-# Command: how to build it (must be indented with a TAB, not spaces!)
+# Makefile for Lane Keeping System
 
 CXX = g++
 CXXFLAGS = -std=c++17
 LIBS = -lsfml-graphics -lsfml-window -lsfml-system
 
-all: build/car_sim
+all: build/lane_keeping
 
-build/car_sim: main.cpp Car.h Environment.h SemiTruck.h ParkingSpot.h
+build/lane_keeping: main.cpp Car.h Environment.h SemiTruck.h Lane.h Controller.h
 	mkdir -p build
-	$(CXX) $(CXXFLAGS) main.cpp -o build/car_sim $(LIBS)
+	$(CXX) $(CXXFLAGS) main.cpp -o build/lane_keeping $(LIBS)
 
-run: build/car_sim
-	./build/car_sim
+run: build/lane_keeping
+	./build/lane_keeping
 
 clean:
 	rm -rf build

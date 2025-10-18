@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include "Car.h"
 #include "SemiTruck.h"
+#include "Lane.h"
 
 class Environment {
     public:
@@ -11,43 +12,60 @@ class Environment {
         float wallThickness;
         sf::Color wallColor;
         sf::Color groundColor;
+        Road* road;  // Pointer to road with lanes
     
     Environment(float w, float h) {
         width = w;
         height = h;
         wallThickness = 20.0f;
         wallColor = sf::Color(60, 60, 60);
-        groundColor = sf::Color(240, 240, 240);
+        groundColor = sf::Color(34, 139, 34);  // Grass green for sides
+        road = nullptr;
+    }
+    
+    ~Environment() {
+        delete road;
+    }
+    
+    void setRoad(Road* r) {
+        road = r;
     }
 
     void draw(sf::RenderWindow& window) {
-        // Draw ground
+        // Draw ground (grass everywhere as base)
         sf::RectangleShape ground(sf::Vector2f(width, height));
         ground.setFillColor(groundColor);
         window.draw(ground);
+        
+        // Draw road if it exists (road will draw its own background)
+        if (road) {
+            road->draw(window);
+        }
 
-        // Draw walls
-        //Top wall
+        // Draw walls (barriers on edges) - make them look like barriers/fences
+        sf::Color barrierColor = sf::Color(180, 50, 50); // Red barriers
+        
+        // Top wall
         sf::RectangleShape topWall(sf::Vector2f(width, wallThickness));
-        topWall.setFillColor(wallColor);
+        topWall.setFillColor(barrierColor);
         topWall.setPosition(0, 0);
         window.draw(topWall);
 
         // Bottom Wall
         sf::RectangleShape bottomWall(sf::Vector2f(width, wallThickness));
-        bottomWall.setFillColor(wallColor);
+        bottomWall.setFillColor(barrierColor);
         bottomWall.setPosition(0, height - wallThickness);
         window.draw(bottomWall);
         
         // Left wall
         sf::RectangleShape leftWall(sf::Vector2f(wallThickness, height));
-        leftWall.setFillColor(wallColor);
+        leftWall.setFillColor(barrierColor);
         leftWall.setPosition(0, 0);
         window.draw(leftWall);
         
         // Right wall
         sf::RectangleShape rightWall(sf::Vector2f(wallThickness, height));
-        rightWall.setFillColor(wallColor);
+        rightWall.setFillColor(barrierColor);
         rightWall.setPosition(width - wallThickness, 0);
         window.draw(rightWall);
     }
@@ -91,13 +109,8 @@ class Environment {
             car.onCollision();
         }
     }
-    /**/
+    
     void handleSemiCollision(SemiTruck & semiTruck) {
-        /*
-        Need to handle both the cab and the trailer collisions
-
-        */
-
         bool collisionOccurred = false;
 
         // Half dimensions for simplified collision model
@@ -105,7 +118,6 @@ class Environment {
         float trailer_maxExtend = std::max(semiTruck.trailer_length, 25.0f) / 2.0f + 5.0f;
 
         // CAB Collision calculation
-
         // Left wall
         if (semiTruck.cab_x - cab_maxExtent < wallThickness) {
             semiTruck.cab_x = wallThickness + cab_maxExtent;
@@ -158,11 +170,10 @@ class Environment {
 
         // Bottom wall
         if (semiTruck.trailer_y + trailer_maxExtend > height - wallThickness) {
-            float temp = semiTruck.trailer_y;
             semiTruck.trailer_y = height - wallThickness - trailer_maxExtend;
             semiTruck.cab_speed *= -0.5f;
             collisionOccurred = true;
-            }
+        }
 
         // Pass collision to semiTruck object
         if (collisionOccurred) {
@@ -171,6 +182,5 @@ class Environment {
     }
 
 };
-
 
 #endif
