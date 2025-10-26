@@ -15,15 +15,16 @@ int main() {
     
     // Get target from user
     Position target;
-    target.x = .5;
-    target.y = .5;
+    target.x = 0;
+    target.y = -1;
     std::cout << "Target: (" << target.x << ", " << target.y << ")\n"; 
     
     double target_angle = robot.inverse(target);
     std::cout << "Target angle: " << target_angle * (180/M_PI) << " deg\n\n";
     
     // Create visualizer
-    RobotVisualizer viz(800, 3.0);
+    float space_size = 5.0;
+    RobotVisualizer viz(800, space_size);
     
     // Simulation loop
     double t = 0.0;
@@ -34,7 +35,7 @@ int main() {
         viz.handleEvents();
         
         // Continue simulation if not reached target
-        if (!reached_target && t < 5.0) {
+        if (!reached_target && t < 5) {
             // PID control
             double control = pid.compute(angle, target_angle, dt);
             
@@ -58,13 +59,6 @@ int main() {
             }
             
             t += dt;
-        }
-
-        if (t > 2) {
-            target.x = -1; 
-            target.y = 1;
-            target_angle = robot.inverse(target);
-            double control = pid.compute(angle, target_angle, dt);
         }
         
         // Draw current state (keep visualizing even after reaching target)

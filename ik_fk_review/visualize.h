@@ -9,11 +9,13 @@ private:
     sf::RenderWindow window;
     float scale;  // pixels per meter
     sf::Vector2f origin;  // screen origin
+    float space_size;
     
 public:
-    RobotVisualizer(float window_size = 800.0f, float meters_shown = 3.0f) 
+    RobotVisualizer(float window_size = 800.0f, float meters_shown = 5.0f) 
         : window(sf::VideoMode(window_size, window_size), "Robot Arm Visualization")
     {
+        space_size = meters_shown;
         scale = window_size / meters_shown;
         origin = sf::Vector2f(window_size / 2, window_size / 2);
         window.setFramerateLimit(60);
@@ -52,9 +54,11 @@ public:
         base.setPosition(origin);
         window.draw(base);
         
-        // Calculate end effector position
-        double end_x = link_length * cos(angle);
-        double end_y = link_length * sin(angle);
+        // Calculate end effector position using forward kinematics
+        Kinematics_single kin(link_length);
+        Position end = kin.forward(angle);
+        double end_x = end.x;
+        double end_y = end.y;
         
         // Draw arm (blue line)
         sf::Vertex arm[] = {
@@ -97,20 +101,20 @@ private:
         window.draw(yAxis, 2, sf::Lines);
         
         // Grid lines every 0.5 meters
-        for (float i = -1.5f; i <= 1.5f; i += 0.5f) {
+        for (float i = -space_size/2; i <= space_size/2; i += 0.5f) {
             if (fabs(i) < 0.01) continue; // skip center
             
             // Vertical lines
             sf::Vertex vline[] = {
-                sf::Vertex(toScreen(i, -1.5), gridColor),
-                sf::Vertex(toScreen(i, 1.5), gridColor)
+                sf::Vertex(toScreen(i, -space_size/2), gridColor),
+                sf::Vertex(toScreen(i, space_size/2), gridColor)
             };
             window.draw(vline, 2, sf::Lines);
             
             // Horizontal lines
             sf::Vertex hline[] = {
-                sf::Vertex(toScreen(-1.5, i), gridColor),
-                sf::Vertex(toScreen(1.5, i), gridColor)
+                sf::Vertex(toScreen(-space_size/2, i), gridColor),
+                sf::Vertex(toScreen(space_size/2, i), gridColor)
             };
             window.draw(hline, 2, sf::Lines);
         }
