@@ -16,15 +16,15 @@ int main() {
     // Get target from user
     Position target;
     target.x = 0;
-    target.y = -1;
+    target.y = 1;
     std::cout << "Target: (" << target.x << ", " << target.y << ")\n"; 
     
     double target_angle = robot.inverse(target);
     std::cout << "Target angle: " << target_angle * (180/M_PI) << " deg\n\n";
     
     // Create visualizer
-    float space_size = 5.0;
-    RobotVisualizer viz(800, space_size);
+    float space_size = 3.0;
+    RobotVisualizer viz(600, space_size);
     
     // Simulation loop
     double t = 0.0;
