@@ -55,7 +55,7 @@ public:
         window.draw(base);
         
         // Calculate end effector position using forward kinematics
-        Kinematics_single kin(link_length);
+        Kinematics kin(link_length);
         Position end = kin.forward(angle);
         double end_x = end.x;
         double end_y = end.y;

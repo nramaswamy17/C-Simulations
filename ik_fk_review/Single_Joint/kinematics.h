@@ -7,11 +7,11 @@ struct Position {
     double x, y;
 };
 
-class Kinematics_single {
+class Kinematics {
 public:
     double link_length;
     
-    Kinematics_single(double length) : link_length(length) {}
+    Kinematics(double length) : link_length(length) {}
     
     // Forward: angle -> position
     Position forward(double angle) {

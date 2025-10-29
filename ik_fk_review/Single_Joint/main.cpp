@@ -6,7 +6,7 @@
 
 int main() {
     // Setup
-    Kinematics_single robot(1.0);  // 1 meter arm
+    Kinematics robot(1.0);  // 1 meter arm
     PIDController pid(5.0, 0.1, 0.5);  // P, I, D gains
     
     double angle = 0.0;
